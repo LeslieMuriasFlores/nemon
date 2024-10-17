@@ -19,8 +19,8 @@ class InvoiceController extends Controller
             // Validar los datos del request
             $validated = $this->validateRequest($request);
 
-            // Buscar o crear el usuario
-            $user = $this->findOrCreateUser($validated['username']);
+            // Buscar el usuario
+            $user = $this->findUserByEmail($validated['username']);
 
             // Calcular el número de días
             $days = $this->calculateDays($validated['start_date'], $validated['end_date']);
@@ -35,8 +35,8 @@ class InvoiceController extends Controller
             }
 
             // Calcular el costo total de energía y potencia
-            $totalEnergyCost = $this->calculateEnergyCost($validated['consumption'], $energyPrices);
-            $totalPowerCost = $this->calculatePowerCost($validated['contractedpower'], $powerPrices, $days);
+            $totalEnergyCost = $this->calculateEnergyCost($validated['consumption'], $energyPrices, $validated['start_date'], $validated['end_date']);
+            $totalPowerCost = $this->calculatePowerCost($validated['contractedpower'], $powerPrices, $days, $validated['start_date'], $validated['end_date']);
 
             // Calcular el total de la factura
             $totalInvoice = $totalEnergyCost + $totalPowerCost;
@@ -71,34 +71,32 @@ class InvoiceController extends Controller
         }
     }
 
-    // Buscar o crear usuario basado en el email
-    private function findOrCreateUser($email)
+    // Buscar usuario basado en el email
+    private function findUserByEmail($email)
     {
-        return User::firstOrCreate(
-            ['email' => $email],
-            [
-                'name' => explode('@', $email)[0],
-                'password' => bcrypt('12345678') // Contraseña por defecto
-            ]
-        );
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            throw new Exception('User does not exist.');
+        }
+        return $user;
     }
 
     // Obtener los precios de energía para un periodo y usuario específico
     private function getEnergyPrices($userId, $startDate, $endDate)
     {
         return EnergyPrice::where('user_id', $userId)
-            ->where('start_date', '<=', $startDate)
-            ->where('end_date', '>=', $endDate)
-            ->first();
+            ->where('start_date', '<=', $endDate)
+            ->where('end_date', '>=', $startDate)
+            ->get();
     }
 
     // Obtener los precios de potencia para un periodo y usuario específico
     private function getPowerPrices($userId, $startDate, $endDate)
     {
         return PowerPrice::where('user_id', $userId)
-            ->where('start_date', '<=', $startDate)
-            ->where('end_date', '>=', $endDate)
-            ->first();
+            ->where('start_date', '<=', $endDate)
+            ->where('end_date', '>=', $startDate)
+            ->get();
     }
 
     // Almacenar la factura en la base de datos
@@ -113,19 +111,28 @@ class InvoiceController extends Controller
     }
 
     // Calcular el costo de energía
-    private function calculateEnergyCost($consumption, $energyPrices)
+    private function calculateEnergyCost($consumption, $energyPrices, $startDate, $endDate)
     {
-        return ($consumption['p1'] * $energyPrices->p1) +
-               ($consumption['p2'] * $energyPrices->p2) +
-               ($consumption['p3'] * $energyPrices->p3);
+        $totalCost = 0;
+        foreach ($energyPrices as $price) {
+            $daysInPeriod = $this->calculateDays($startDate, $endDate); // O ajustar para calcular días en el rango del precio
+            $totalCost += ($consumption['p1'] * $price->p1 * $daysInPeriod) +
+                          ($consumption['p2'] * $price->p2 * $daysInPeriod) +
+                          ($consumption['p3'] * $price->p3 * $daysInPeriod);
+        }
+        return $totalCost;
     }
 
     // Calcular el costo de potencia
-    private function calculatePowerCost($contractedPower, $powerPrices, $days)
+    private function calculatePowerCost($contractedPower, $powerPrices, $days, $startDate, $endDate)
     {
-        return ($contractedPower['p1'] * $powerPrices->p1 * $days) +
-               ($contractedPower['p2'] * $powerPrices->p2 * $days) +
-               ($contractedPower['p3'] * $powerPrices->p3 * $days);
+        $totalCost = 0;
+        foreach ($powerPrices as $price) {
+            $totalCost += ($contractedPower['p1'] * $price->p1 * $days) +
+                          ($contractedPower['p2'] * $price->p2 * $days) +
+                          ($contractedPower['p3'] * $price->p3 * $days);
+        }
+        return $totalCost;
     }
 
     // Calcular el número de días entre dos fechas
