@@ -1,6 +1,7 @@
-// InvoiceList.jsx
+// src/components/InvoiceList.jsx
 import React, { useEffect, useState } from 'react';
 import axios from '../axios'; // Asegúrate de que esto apunta correctamente a tu instancia de Axios
+import '../App.css';
 
 const InvoiceList = () => {
     const [invoices, setInvoices] = useState([]); // Inicializar como un array vacío
@@ -23,20 +24,23 @@ const InvoiceList = () => {
     }, []);
 
     if (loading) {
-        return <div>Cargando...</div>;
+        return <div className="loading-message">Cargando...</div>;
     }
 
     if (error) {
-        return <div>Error al cargar las facturas: {error.message}</div>;
+        return <div className="error-message">Error al cargar las facturas: {error.message}</div>;
     }
 
     return (
-        <div>
-            <h2>Listado de Facturas</h2>
-            <ul>
+        <div className="invoice-list-container">
+            <h2 className="text-center">Listado de Facturas</h2>
+            <ul className="invoice-list">
                 {invoices.map((invoice) => (
-                    <li key={invoice.id}>
-                        Factura ID: {invoice.id}, Total: {invoice.total_invoice}
+                    <li key={invoice.id} className="invoice-item">
+                        <strong>Factura ID:</strong> {invoice.id}, 
+                        <strong>Cliente:</strong> {invoice.user_id},
+                        <strong>Total:</strong> {invoice.total_invoice} €,
+                        <strong>Creado:</strong> {new Date(invoice.created_at).toLocaleDateString('es-ES') }
                     </li>
                 ))}
             </ul>
