@@ -1,9 +1,9 @@
 // src/components/InvoiceCalculator.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from '../axios';
 import '../App.css';
-import { ToastContainer, toast } from 'react-toastify'; // Importar ToastContainer y toast
-import 'react-toastify/dist/ReactToastify.css'; // Importar estilos
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const InvoiceCalculator = () => {
   const [consumption, setConsumption] = useState({ p1: '', p2: '', p3: '' });
@@ -12,6 +12,22 @@ const InvoiceCalculator = () => {
   const [endDate, setEndDate] = useState('');
   const [username, setUsername] = useState('');
   const [invoiceResult, setInvoiceResult] = useState(null);
+  const [userEmails, setUserEmails] = useState([]); // Estado para los emails
+
+  useEffect(() => {
+    // Función para obtener emails de usuarios
+    const fetchEmails = async () => {
+      try {
+        const response = await axios.get('/users/emails');
+        setUserEmails(response.data);
+      } catch (error) {
+        console.error('Error al obtener los correos electrónicos:', error);
+        toast.error('Error al cargar los correos electrónicos');
+      }
+    };
+
+    fetchEmails(); // Llamar a la función para obtener emails
+  }, []); // Se ejecuta una vez al cargar el componente
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -177,15 +193,18 @@ const InvoiceCalculator = () => {
 
         <div className="mb-3 form-group d-flex align-items-center">
           <label htmlFor="username" className="form-label me-3" style={{ width: '150px' }}>Email:</label>
-          <input
-            type="email"
+          <select
             id="username"
-            className="form-control"
+            className="form-select"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="Email"
             required
-          />
+          >
+            <option value="">Seleccione un email</option>
+            {userEmails.map((email, index) => (
+              <option key={index} value={email}>{email}</option>
+            ))}
+          </select>
         </div>
 
         <button type="submit" className="btn btn-primary">Calcular</button>

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EnergyPriceController;
 use App\Http\Controllers\PowerPriceController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,3 +33,12 @@ Route::post('/generatebill', [InvoiceController::class, 'generateBill']);
 Route::get('/invoices', [InvoiceController::class, 'index']);
 Route::get('/prices/energy', [EnergyPriceController::class, 'index']);
 Route::get('/prices/power', [PowerPriceController::class, 'index']);
+
+Route::put('/prices/energy/{id}', [EnergyPriceController::class, 'update']);
+Route::delete('/prices/energy/{id}', [EnergyPriceController::class, 'destroy']);
+Route::put('/prices/power/{id}', [PowerPriceController::class, 'update']);
+Route::delete('/prices/power/{id}', [PowerPriceController::class, 'destroy']);
+
+Route::get('/users/{id}/email', [UserController::class, 'getEmail']);
+Route::delete('/invoices/{id}', [InvoiceController::class, 'deleteInvoice']);
+Route::get('/users/emails', [UserController::class, 'getAllEmails']);

@@ -44,12 +44,6 @@ class InvoiceController extends Controller
             // Almacenar la factura
             $invoice = $this->storeInvoice($user->id, $totalEnergyCost, $totalPowerCost, $totalInvoice);
 
-            // Logging de éxito
-            Log::info("Factura generada con éxito para el usuario {$user->email}", [
-                'invoice_id' => $invoice->id,
-                'total_invoice' => $totalInvoice
-            ]);
-
             // Respuesta exitosa
             return response()->json([
                 'total_energy_cost' => $totalEnergyCost,
@@ -59,10 +53,6 @@ class InvoiceController extends Controller
             ], 201);
 
         } catch (Exception $e) {
-            // Logging de error
-            Log::error("Error generando factura para el usuario: {$request->username}", [
-                'error_message' => $e->getMessage()
-            ]);
 
             // Respuesta de error
             return response()->json([
@@ -115,7 +105,7 @@ class InvoiceController extends Controller
     {
         $totalCost = 0;
         foreach ($energyPrices as $price) {
-            $daysInPeriod = $this->calculateDays($startDate, $endDate); // O ajustar para calcular días en el rango del precio
+            $daysInPeriod = $this->calculateDays($startDate, $endDate);
             $totalCost += ($consumption['p1'] * $price->p1 * $daysInPeriod) +
                           ($consumption['p2'] * $price->p2 * $daysInPeriod) +
                           ($consumption['p3'] * $price->p3 * $daysInPeriod);
@@ -162,5 +152,25 @@ class InvoiceController extends Controller
     {
         $invoices = Invoice::all();
         return response()->json($invoices);
+    }
+
+    // Eliminar una factura por su ID
+    public function deleteInvoice($id)
+    {
+        try {
+            $invoice = Invoice::findOrFail($id);
+            $invoice->delete();
+            
+            // Respuesta exitosa
+            return response()->json([
+                'message' => 'Invoice successfully deleted'
+            ], 200);
+
+        } catch (Exception $e) {
+            // Respuesta de error
+            return response()->json([
+                'error' => 'Error deleting invoice: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
